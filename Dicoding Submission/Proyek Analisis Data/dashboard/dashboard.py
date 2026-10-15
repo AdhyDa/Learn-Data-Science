@@ -24,8 +24,9 @@ SVG_REVENUE = """<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
 # ==========================================
 
 def create_delivery_delay_df(df):
-    # Fungsi untuk membuat dataframe keterlambatan pengiriman pada 5 kota teratas.
-
+    """
+    Fungsi untuk membuat dataframe keterlambatan pengiriman pada 5 kota teratas.
+    """
     if df.empty:
         return pd.DataFrame(columns=['customer_city', 'delay_days'])
 
@@ -56,8 +57,9 @@ def create_delivery_delay_df(df):
 
 
 def create_rfm_df(df):
-    # Fungsi untuk membuat dataframe RFM dan mengklasifikasikan segmen pelanggan.
-
+    """
+    Fungsi untuk membuat dataframe RFM dan mengklasifikasikan segmen pelanggan.
+    """
     if df.empty:
         return pd.DataFrame(columns=['customer_unique_id', 'recency', 'frequency', 'monetary', 'Customer_Segment'])
 
@@ -106,8 +108,9 @@ def create_rfm_df(df):
 
 @st.cache_data
 def load_data():
-    # Memuat dataset main_data.csv dan mengonversi kolom tanggal.
-    
+    """
+    Memuat dataset main_data.csv dan mengonversi kolom tanggal.
+    """
     base_dir = pathlib.Path(__file__).parent.resolve()
     csv_file = base_dir / "main_data.csv"
     if not csv_file.exists():
@@ -206,7 +209,6 @@ with col_viz1:
     else:
         fig_delay, ax_delay = plt.subplots(figsize=(9, 4.5))
         
-        # Solid colors tanpa gradien untuk memenuhi antislop R-01
         bar_color = "#1E40AF"
         bars = ax_delay.barh(
             delay_df['customer_city'],
@@ -275,7 +277,6 @@ with col_viz2:
     else:
         fig_rfm, ax_rfm = plt.subplots(figsize=(7, 5))
         
-        # Palet warna solid tegas tanpa gradien (antislop R-01, R-29)
         segment_colors = {
             'Champion (VIP)': '#1D4ED8',
             'Loyal/Active': '#0D9488',
@@ -286,7 +287,7 @@ with col_viz2:
             segment_colors.get(seg, '#94A3B8') for seg in segment_counts['Segment']
         ]
 
-        pie_result = ax_rfm.pie(
+        wedges, texts, autotexts = ax_rfm.pie(
             segment_counts['Count'],
             labels=segment_counts['Segment'],
             autopct='%1.1f%%',
@@ -295,9 +296,6 @@ with col_viz2:
             wedgeprops=dict(width=0.42, edgecolor='white', linewidth=1.5),
             pctdistance=0.78
         )
-
-        texts = pie_result[1]
-        autotexts = pie_result[2] if len(pie_result) > 2 else []
 
         for text in texts:
             text.set_fontsize(9)
