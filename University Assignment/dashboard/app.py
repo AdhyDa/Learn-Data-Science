@@ -164,6 +164,8 @@ def preprocess(
         "dropped_cols": dropped_cols,
         "categorical_cols": categorical_cols,
         "scaler_choice": scaler_choice,
+        "scaler_obj": scaler_obj,          # None jika scaler_choice=="None"
+        "scaler_num_cols": list(numerical_cols),  # kolom numerik yang di-scale
         "y_train_before_smote": y_train_before,
         "y_train_after_smote": y_train_after,
         "X_train_raw_size": len(X_train),
@@ -704,23 +706,9 @@ with tab_model:
                     le = st.session_state["label_encoder"]
                     feature_names = st.session_state["feature_names"]
 
-                    # Bangun input row: mulai dari median semua fitur
-                    # Lakukan preprocessing singkat: drop leakage, encode kategorik, scale
-                    # Gunakan X_train sebagai referensi kolom (sudah encoded)
-                    X_ref = prep["X_train"]
-
-                    # Ambil 1 baris dari X_test sebagai template, lalu override dengan input
-                    # Cara aman: buat Series dengan semua feature_names = 0, lalu isi
-                    row = pd.Series(
-                        {f: X_ref[f].median() if f in X_ref.columns else 0.0 for f in feature_names},
-                        index=feature_names,
-                        dtype=float,
-                    )
-
-                    # Override dengan nilai dari simulator (harus mapping ke scaled space jika scaler aktif)
-                    # Kita re-create satu baris dari df_original lalu preprocess
+                    # Bangun sample dari baris pertama df_original sebagai template,
+                    # override dengan nilai input user, lalu encode + scale sesuai pipeline training.
                     sample_row = df_orig.drop(columns=[TARGET_COL]).iloc[[0]].copy()
-                    # Set nilai simulator
                     for feat, val in input_vals.items():
                         if feat in sample_row.columns:
                             sample_row[feat] = val
@@ -734,6 +722,15 @@ with tab_model:
                         if col not in sample_encoded.columns:
                             sample_encoded[col] = 0
                     sample_encoded = sample_encoded[feature_names]
+
+                    # Apply scaler jika aktif (wajib agar distribusi input cocok dengan data training)
+                    scaler_obj = prep.get("scaler_obj")
+                    scaler_num_cols = prep.get("scaler_num_cols", [])
+                    if scaler_obj is not None and scaler_num_cols:
+                        cols_to_scale = [c for c in scaler_num_cols if c in sample_encoded.columns]
+                        sample_encoded[cols_to_scale] = scaler_obj.transform(
+                            sample_encoded[cols_to_scale]
+                        )
 
                     # Predict
                     pred_encoded = model.predict(sample_encoded)[0]
